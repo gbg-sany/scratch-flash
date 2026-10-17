@@ -3,18 +3,19 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath group: 'org.gradlefx', name: 'gradlefx', version: '1.2.0'
+        classpath group: 'org.gradlefx', name: 'gradlefx', version: '1.5.0'
     }
 }
 
 repositories {
+    mavenCentral()
     ivy {
         name 'Apache Flex'
-        artifactPattern 'http://archive.apache.org/dist/flex/[revision]/binaries/[module]-[revision]-bin.[ext]'
+        artifactPattern 'https://archive.apache.org/dist/flex/[revision]/binaries/[module]-[revision]-bin.[ext]'
     }
     ivy {
         name 'Player Globals'
-        artifactPattern 'http://fpdownload.macromedia.com/get/flashplayer/installers/archive/[module]/[module][revision].[ext]'
+        artifactPattern 'https://raw.githubusercontent.com/nexussays/playerglobal/fef560243029214656d83fc673be0267a1ea0816/[revision]/[artifact].[ext]'
     }
 }
 
@@ -43,7 +44,7 @@ println "Commit ID for scratch-flash is: ${scratchFlashCommitID}"
 
 dependencies {
     flexSDK group: 'org.apache', name: 'apache-flex-sdk', version: '4.15.0', ext: 'zip'
-    external group: 'macromedia.com', name: 'playerglobal', version: playerVersion.replace('.', '_'), ext: 'swc'
+    external group: 'macromedia.com', name: 'playerglobal', version: playerVersion, ext: 'swc'
     merged files(
             "${commonDir}/libs/as3corelib.swc",
             "${commonDir}/libs/blooddy_crypto.swc",
@@ -66,6 +67,8 @@ additionalCompilerOptions = [
 ]
 additionalCompilerOptions += config.get('additionalCompilerOptions')
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '2.5'
+build.dependsOn compileFlex
+
+wrapper {
+    gradleVersion = '5.6.4'
 }

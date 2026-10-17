@@ -52,12 +52,8 @@ Check `asconfig.json` for the configuration settings used by the IDE build.
 
 ## Building
 
-The Scratch 2.0 build process now uses [Gradle](http://gradle.org/) to simplify the process of acquiring dependencies:
-the necessary Flex SDKs will automatically be downloaded and cached for you. The [Gradle
-wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html) is included in this repository, but you will
-need a Java Runtime Environment or Java Development Kit in order to run Gradle; you can download either from Oracle's
-[Java download page](http://www.oracle.com/technetwork/java/javase/downloads/index.html). That page also contains
-guidance on whether to download the JRE or JDK.
+The Scratch 2.0 build uses Gradle to acquire and cache the Flex SDK. The Gradle wrapper is included in this repository.
+Gradle 5.6.4 supports Java 8 through 12; Java 11 is recommended for a reproducible build.
 
 There are two versions of the Scratch 2.0 editor that can be built from this repository. See the following table to
 determine the appropriate command for each version. When building on Windows, replace `./gradlew` with `.\gradlew`.
@@ -65,7 +61,7 @@ determine the appropriate command for each version. When building on Windows, re
 Required Flash version | Features | Command
 --- | --- | ---
 11.6 or above | 3D-accelerated rendering | `./gradlew build -Ptarget="11.6"`
-10.2 - 11.5 | Compatibility with older Flash (Linux, older OS X, etc.) | `./gradlew build -Ptarget="10.2"`
+10.2 - 11.5 | No 3D acceleration; compatible with older Flash runtimes | `./gradlew build -Ptarget="10.2"`
 
 A successful build should look something like this (SDK download information omitted):
 
@@ -105,6 +101,24 @@ Please note that the Scratch trademarks (including the Scratch name, logo, Scrat
 For use of these Marks, please see the [Scratch Trademark
 Policy](http://wiki.scratch.mit.edu/wiki/Scratch_1.4_Source_Code#Scratch_Trademark_Policy).
 
+## Ubuntu Desktop
+
+Flash Player is end-of-life and is not available as a supported Ubuntu desktop runtime. Install Java 11 and Ruffle's
+desktop application, then build the non-3D target and launch it:
+
+```sh
+sudo apt update
+sudo apt install openjdk-11-jdk flatpak git
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak install flathub rs.ruffle.Ruffle
+./gradlew build -Ptarget=10.2
+./run-ubuntu.sh
+```
+
+The launcher uses a `ruffle` executable on `PATH` or the Ruffle Flatpak. Ruffle's ActionScript 3 support is still
+incomplete, so some Scratch editor features may not work. The SWF build is verified; full desktop runtime compatibility
+must be checked against the Ruffle version and Ubuntu system in use.
+
 ## Debugging
 
 Here are a few integrated development environments available with Flash debugging support:
@@ -115,14 +129,9 @@ Here are a few integrated development environments available with Flash debuggin
 * [FlashDevelop](http://www.flashdevelop.org/)
 * [FDT for Eclipse](http://fdt.powerflasher.com/)
 
-It may be difficult to configure your IDE to use Gradle's cached version of the Flex SDK. To debug the Scratch 2.0 SWF
-with your own copy of the SDK you will need the [Flex SDK](http://flex.apache.org/) version 4.10+, and
-[playerglobal.swc files](http://helpx.adobe.com/flash-player/kb/archived-flash-player-versions.html#playerglobal) for
-Flash Player versions 10.2 and 11.6 added to the Flex SDK.
-
-After downloading ``playerglobal11_6.swc`` and ``playerglobal10_2.swc``, move them to
-``${FLEX_HOME}/frameworks/libs/player/${VERSION}/playerglobal.swc``. E.g., ``playerglobal11_6.swc`` should be located
-at ``${FLEX_HOME}/frameworks/libs/player/11.6/playerglobal.swc``.
+It may be difficult to configure your IDE to use Gradle's cached version of the Flex SDK. The Gradle build downloads
+the required PlayerGlobal SWCs automatically. For IDE builds, use the [Flex SDK](http://flex.apache.org/) version 4.10+
+and install the matching PlayerGlobal SWC under ``${FLEX_HOME}/frameworks/libs/player/${VERSION}/playerglobal.swc``.
 
 Consult your IDE's documentation to configure it for your newly-constructed copy of the Flex SDK.
 
