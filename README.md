@@ -119,6 +119,71 @@ The launcher uses a `ruffle` executable on `PATH` or the Ruffle Flatpak. Ruffle'
 incomplete, so some Scratch editor features may not work. The SWF build is verified; full desktop runtime compatibility
 must be checked against the Ruffle version and Ubuntu system in use.
 
+## Offline Media
+
+When no remote library or asset URLs are supplied, the editor loads media from a `media/` directory next to the SWF.
+This packages media alongside the SWF, not inside it. No FlashVars or local web server are needed for Ruffle desktop.
+
+### Import From the Scratch 2 AIR Package
+
+The build can extract the media from Scratch 2's offline-editor AIR package without installing or running Adobe AIR.
+A [third-party preserved copy of Scratch-461.air](https://archive.org/download/scratch-offline-editor/Scratch-461.air)
+is available on Internet Archive. This is not an official download host. The checksum below matches that archive's
+published copy; it is not an independently verified publisher checksum.
+
+On Ubuntu, download once and build:
+
+```sh
+mkdir -p build/downloads
+curl --fail --location --output build/downloads/Scratch-461.air \
+   https://archive.org/download/scratch-offline-editor/Scratch-461.air
+echo 'fbfda62b49ea8e59f02f6757b23ee0ca5c516f63a3936bd7733bd9236117eaec  build/downloads/Scratch-461.air' | sha256sum --check
+./gradlew build -Ptarget=10.2
+./run-ubuntu.sh
+```
+
+Builds automatically use `build/downloads/Scratch-461.air` when it is present and `mediaDir` is not supplied. To use
+an AIR archive elsewhere, pass `-PmediaArchive=/path/to/Scratch-461.air` instead. The archive is used only at build
+time. Its original layout is preserved: catalogues stay in `media/libs/`, and hashed media files stay directly
+in `media/` next to the SWF. AIR application code, scripts, and Git metadata are not imported. The source
+archive and extracted media stay in the ignored `build/` directory. A Gradle `clean` removes them, so retain the
+original archive elsewhere if needed. Review the original media's licensing and attribution before redistribution.
+
+### Use an Existing Media Folder
+
+Alternatively, supply a complete Scratch 2-compatible media bundle in this layout:
+
+```text
+media/
+   libs/
+      spriteLibrary.json
+      costumeLibrary.json
+      backdropLibrary.json
+      soundLibrary.json
+   <md5>.json
+   <md5>.svg
+   <md5>.png
+   <md5>.wav
+```
+
+Keep the original asset filenames referenced by the library JSON and sprite JSON. The library list alone is not
+enough: sprite metadata, costumes, text layers, and sounds must all be present. Downloaded media is not included in
+this source repository. Obtain a compatible bundle separately and retain its license and attribution files.
+
+An extracted Scratch 2 AIR package's `media/` folder can be used directly, without rearranging files. Place the
+bundle at the repository's `media/` directory, or point the build to an existing folder:
+
+```sh
+./gradlew build -Ptarget=10.2 -PmediaDir=/path/to/media
+./run-ubuntu.sh
+```
+
+The build checks referenced assets and copies the bundle to `build/10.2/media/` (or `build/11.6/media/` for that target).
+Distribute that directory together with the SWF. Explicit `urlOverrides` for remote libraries/assets still take
+precedence; `urlOverrides` can also set `mediaRoot` to another local directory or URL, including its trailing slash.
+Do not substitute Scratch 3 library JSON: it uses a different format. Local packaging does not resolve unrelated
+Ruffle rendering limitations or a missing default sprite.
+
 ## Debugging
 
 Here are a few integrated development environments available with Flash debugging support:

@@ -69,6 +69,90 @@ additionalCompilerOptions += config.get('additionalCompilerOptions')
 
 build.dependsOn compileFlex
 
+def mediaSourceDir = file(findProperty('mediaDir') ?: "${commonDir}/media")
+def defaultMediaArchive = file("${commonDir}/build/downloads/Scratch-461.air")
+def mediaArchiveFile = findProperty('mediaArchive') ? file(property('mediaArchive')) :
+    (!project.hasProperty('mediaDir') && defaultMediaArchive.isFile() ? defaultMediaArchive : null)
+task bundleMedia(dependsOn: compileFlex) {
+    inputs.files(mediaArchiveFile ? files(mediaArchiveFile) : fileTree(mediaSourceDir))
+    outputs.dir "${buildDir}/media"
+    doLast {
+        def sourceDir = mediaSourceDir
+        if (mediaArchiveFile) {
+            if (!mediaArchiveFile.isFile()) {
+                throw new GradleException("Media archive not found: ${mediaArchiveFile}")
+            }
+            sourceDir = new File(temporaryDir, 'media')
+            project.sync {
+                into sourceDir
+                includeEmptyDirs = false
+                from(zipTree(mediaArchiveFile)) {
+                    include 'media/libs/*Library.json', 'media/*'
+                    eachFile { details ->
+                        if (details.path.startsWith('media/libs/') ||
+                                details.name ==~ /[0-9a-f]+\.[A-Za-z0-9]+/ ||
+                                details.name == 'README.md' ||
+                                details.name.startsWith('LICENSE') || details.name.startsWith('COPYING')) {
+                            details.path = details.path.substring('media/'.length())
+                        } else {
+                            details.exclude()
+                        }
+                    }
+                }
+            }
+        }
+        if (!sourceDir.isDirectory()) {
+            if (project.hasProperty('mediaDir')) {
+                throw new GradleException("Media directory not found: ${sourceDir}")
+            }
+            logger.lifecycle('No offline media bundle found. See the Offline Media section in README.md.')
+            return
+        }
+        if (!new File(sourceDir, 'libs/spriteLibrary.json').isFile()) {
+            throw new GradleException('Offline media must contain libs/spriteLibrary.json')
+        }
+        def checkedAssets = [] as Set
+        def checkReferences
+        checkReferences = { value ->
+            if (value instanceof Map) {
+                value.each { key, child ->
+                    if (key in ['md5', 'baseLayerMD5', 'textLayerMD5'] && child instanceof String && child) {
+                        if (!(child ==~ /[A-Za-z0-9_.-]+/) || child in ['.', '..']) {
+                            throw new GradleException("Invalid media asset name: ${child}")
+                        }
+                        def asset = new File(sourceDir, child)
+                        if (!asset.isFile()) {
+                            throw new GradleException("Missing offline media asset: ${asset}")
+                        }
+                        if (checkedAssets.add(child) && child.endsWith('.json')) {
+                            checkReferences(new groovy.json.JsonSlurper().parse(asset, 'UTF-8'))
+                        }
+                    } else {
+                        checkReferences(child)
+                    }
+                }
+            } else if (value instanceof List) {
+                value.each { child -> checkReferences(child) }
+            }
+        }
+        fileTree(new File(sourceDir, 'libs')).matching { include '*Library.json' }.each { library ->
+            def text = library.readLines('UTF-8').findAll { line ->
+                !line.startsWith('//') && !line.startsWith('<')
+            }.join('\n')
+            def entries = new groovy.json.JsonSlurper().parseText(text)
+            if (!(entries instanceof List)) {
+                throw new GradleException("Media library must contain an array: ${library}")
+            }
+            checkReferences(entries)
+        }
+        project.sync {
+            from sourceDir
+            into "${buildDir}/media"
+        }
+    }
+}
+build.dependsOn bundleMedia
+
 wrapper {
     gradleVersion = '5.6.4'
 }

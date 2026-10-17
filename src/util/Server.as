@@ -65,8 +65,10 @@ public class Server implements IServer {
 		}
 	}
 
-	// No default URLs
-	protected function setDefaultURLs():void {}
+	protected function setDefaultURLs():void {
+		var swfURL:String = Scratch.app.loaderInfo.url.replace(/[?#].*$/, '');
+		URLs.mediaRoot = swfURL.substr(0, swfURL.lastIndexOf('/') + 1) + 'media/';
+	}
 
 	public function overrideURLs(overrides:Object):void {
 		var forceProtocol:String;
@@ -263,12 +265,16 @@ public class Server implements IServer {
 //			whenDone(BackpackPart.localAssets[md5]);
 //			return null;
 //		}
-		var url:String = URLs.assetCdnPrefix + URLs.internalAPI + 'asset/' + md5 + '/get/';
+		var url:String = URLs.assetCdnPrefix != null && URLs.internalAPI != null ?
+			URLs.assetCdnPrefix + URLs.internalAPI + 'asset/' + md5 + '/get/' :
+			URLs.mediaRoot + encodeURIComponent(md5);
 		return serverGet(url, whenDone);
 	}
 
 	public function getMediaLibrary(libraryType:String, whenDone:Function):URLLoader {
-		var url:String = getCdnStaticSiteURL() + 'medialibraries/' + libraryType + 'Library.json';
+		var root:String = URLs.siteCdnPrefix != null && URLs.staticFiles != null ?
+			getCdnStaticSiteURL() + 'medialibraries/' : URLs.mediaRoot + 'libs/';
+		var url:String = root + libraryType + 'Library.json';
 		return serverGet(url, whenDone);
 	}
 
