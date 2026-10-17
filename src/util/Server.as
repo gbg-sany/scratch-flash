@@ -280,7 +280,10 @@ public class Server implements IServer {
 
 	protected function downloadThumbnail(url:String, w:int, h:int, whenDone:Function):URLLoader {
 		function decodeImage(data:ByteArray):void {
-			if (!data || data.length == 0) return; // no data
+			if (!data || data.length == 0) {
+				whenDone(null);
+				return;
+			}
 			var decoder:Loader = new Loader();
 			decoder.contentLoaderInfo.addEventListener(Event.COMPLETE, imageDecoded);
 			decoder.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, imageError);
@@ -293,11 +296,13 @@ public class Server implements IServer {
 				else {
 					Scratch.app.logMessage('Server caught exception decoding image: ' + url);
 				}
+				whenDone(null);
 			}
 		}
 
 		function imageError(e:IOErrorEvent):void {
 			Scratch.app.log(LogLevel.WARNING, 'ServerOnline failed to decode image', {url: url});
+			whenDone(null);
 		}
 
 		function imageDecoded(e:Event):void {
@@ -321,7 +326,9 @@ public class Server implements IServer {
 	}
 
 	public function getThumbnail(idAndExt:String, w:int, h:int, whenDone:Function):URLLoader {
-		var url:String = getCdnStaticSiteURL() + 'medialibrarythumbnails/' + idAndExt;
+		var url:String = URLs.siteCdnPrefix != null && URLs.staticFiles != null ?
+			getCdnStaticSiteURL() + 'medialibrarythumbnails/' + idAndExt :
+			URLs.mediaRoot + encodeURIComponent(idAndExt);
 		return downloadThumbnail(url, w, h, whenDone);
 	}
 
