@@ -145,7 +145,8 @@ echo 'fbfda62b49ea8e59f02f6757b23ee0ca5c516f63a3936bd7733bd9236117eaec  build/do
 Builds automatically use `build/downloads/Scratch-461.air` when it is present and `mediaDir` is not supplied. To use
 an AIR archive elsewhere, pass `-PmediaArchive=/path/to/Scratch-461.air` instead. The archive is used only at build
 time. Its original layout is preserved: catalogues stay in `media/libs/`, and hashed media files stay directly
-in `media/` next to the SWF. AIR application code, scripts, and Git metadata are not imported. The source
+in `media/` next to the SWF. The archive's `locale/lang_list.txt` and `locale/*.po` translations are also copied
+to `locale/` next to the SWF. AIR application code, scripts, and Git metadata are not imported. The source
 archive and extracted media stay in the ignored `build/` directory. A Gradle `clean` removes them, so retain the
 original archive elsewhere if needed. Review the original media's licensing and attribution before redistribution.
 
@@ -179,7 +180,9 @@ bundle at the repository's `media/` directory, or point the build to an existing
 ```
 
 The build checks referenced assets and copies the bundle to `build/10.2/media/` (or `build/11.6/media/` for that target).
-Distribute that directory together with the SWF. Explicit `urlOverrides` for remote libraries/assets still take
+When using extracted folders instead of an AIR archive, also pass `-PlocaleDir=/path/to/locale` to package the
+language list and translations (or place the extracted `locale/` directory at the repository root).
+Distribute both `media/` and `locale/` together with the SWF. Explicit `urlOverrides` for remote libraries/assets still take
 precedence; `urlOverrides` can also set `mediaRoot` to another local directory or URL, including its trailing slash.
 Do not substitute Scratch 3 library JSON: it uses a different format. Local packaging does not resolve unrelated
 Ruffle rendering limitations or a missing default sprite.

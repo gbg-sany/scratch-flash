@@ -153,6 +153,25 @@ task bundleMedia(dependsOn: compileFlex) {
 }
 build.dependsOn bundleMedia
 
+def localeDirectoryOverride = gradle.startParameter.projectProperties['localeDir']
+task bundleLocales(type: Sync) {
+    into "${buildDir}/locale"
+    includeEmptyDirs = false
+    if (localeDirectoryOverride) {
+        from file(localeDirectoryOverride)
+        include 'lang_list.txt', '*.po'
+    } else if (mediaArchiveFile) {
+        from(zipTree(mediaArchiveFile)) {
+            include 'locale/lang_list.txt', 'locale/*.po'
+            eachFile { details -> details.path = details.name }
+        }
+    } else {
+        from file("${commonDir}/locale")
+        include 'lang_list.txt', '*.po'
+    }
+}
+build.dependsOn bundleLocales
+
 wrapper {
     gradleVersion = '5.6.4'
 }
